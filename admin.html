@@ -327,6 +327,24 @@
             background: #27ae60;
         }
 
+        .copy-btn {
+            background: #3498db;
+            order: -1; /* Pone el botón de copiar primero */
+        }
+
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+
+        /* Ajuste para los botones de acción para que se muestren en fila */
+        .code-item > div:last-child {
+            display: flex;
+            flex-direction: row; /* Cambia a fila */
+            justify-content: center;
+            flex-wrap: wrap; /* Permite que los botones pasen a la siguiente línea si no caben */
+            gap: 5px;
+        }
+
         /* Sistema de Notificaciones */
         .notification-banner {
             position: relative;
@@ -541,7 +559,10 @@
                 <h2>🎁 Crear Nuevo Código</h2>
                 <form id="createCodeForm">
                     <div class="form-group">
-                        <label>Código Personalizado:</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label for="customCode">Código Personalizado:</label>
+                            <button type="button" id="generateCodeBtn" style="padding: 5px 10px; font-size: 0.8rem; border-radius: 10px; background: rgba(255,255,255,0.3); color: white; border: 1px solid white; cursor: pointer;">🎲 Generar Aleatorio</button>
+                        </div>
                         <input type="text" id="customCode" placeholder="Ej: MARIA2025" required maxlength="20" style="text-transform: uppercase;">
                     </div>
                     
@@ -1561,6 +1582,9 @@
             actualizarListaCodigos();
             actualizarEstadisticas();
             
+            // Event listener para el botón de generar código aleatorio
+            document.getElementById('generateCodeBtn').addEventListener('click', generarCodigoAleatorio);
+            
             // Llamar una vez para establecer el estado inicial correcto
             setTimeout(manejarCambioTiradas, 100); 
         }
@@ -1795,10 +1819,13 @@
                     div.className = `code-item ${codigo.usado ? 'used' : 'active'}`;
                     
                     const estado = codigo.usado ? 'Gastado' : 'Activo';
-                    const botones = codigo.usado 
-                        ? `<button class="delete-btn reactivate-btn action-btn" data-codigo="${codigo.codigoId}" data-action="reactivar" id="reactivar-${codigo.codigoId}">🔄 Reactivar</button>
-                           <button class="delete-btn action-btn" data-codigo="${codigo.codigoId}" data-action="eliminar" id="eliminar-${codigo.codigoId}">🗑️ Eliminar</button>`
-                        : `<button class="delete-btn action-btn" data-codigo="${codigo.codigoId}" data-action="eliminar" id="eliminar-${codigo.codigoId}">🗑️ Eliminar</button>`;
+                    let botones = `<button class="copy-btn action-btn" data-codigo="${codigo.codigoId}" title="Copiar código">� Copiar</button>`;
+
+                    if (codigo.usado) {
+                        botones += `<button class="delete-btn reactivate-btn action-btn" data-codigo="${codigo.codigoId}" data-action="reactivar" id="reactivar-${codigo.codigoId}">� Reactivar</button>`;
+                    }
+
+                    botones += `<button class="delete-btn action-btn" data-codigo="${codigo.codigoId}" data-action="eliminar" id="eliminar-${codigo.codigoId}">🗑️ Eliminar</button>`;
                     
                     // Manejar premios como array o string
                     const premiosArray = Array.isArray(codigo.premios) ? codigo.premios : [codigo.premios];
@@ -1858,6 +1885,14 @@
                     if (confirmed) {
                         await eliminarCodigo(codigo, this);
                     }
+                });
+            });
+            
+            // Event listeners para botones de copiar
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const codigo = this.getAttribute('data-codigo');
+                    copiarAlPortapapeles(codigo);
                 });
             });
         }
@@ -1968,6 +2003,41 @@
                 document.getElementById('totalPremios').textContent = '0';
                 document.getElementById('totalTiradas').textContent = '0';
             }
+        }
+
+        function generarCodigoAleatorio() {
+            const prefix = 'CARMEN-';
+            const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Caracteres sin O y 0 para evitar confusiones
+            let result = '';
+            for (let i = 0; i < 4; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('customCode').value = prefix + result;
+            mostrarNotificacion('✨ ¡Código aleatorio generado!', 'success');
+        }
+
+        function copiarAlPortapapeles(texto) {
+            if (!navigator.clipboard) {
+                // Fallback para navegadores antiguos
+                const textArea = document.createElement("textarea");
+                textArea.value = texto;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    mostrarNotificacion(`Código "${texto}" copiado.`, 'success');
+                } catch (err) {
+                    mostrarNotificacion('Error al intentar copiar.', 'error');
+                }
+                document.body.removeChild(textArea);
+                return;
+            }
+            navigator.clipboard.writeText(texto).then(function() {
+                mostrarNotificacion(`Código "${texto}" copiado.`, 'success');
+            }, function(err) {
+                mostrarNotificacion('Error al copiar.', 'error');
+            });
         }
 
         document.getElementById('customCode').addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
