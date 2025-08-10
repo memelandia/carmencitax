@@ -1,0 +1,20 @@
+{
+  "name": "carmencita-ruleta",
+  "version": "1.0.0",
+  "description": "Ruleta interactiva para Carmencita",
+  "main": "index.html",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'Static site - no build needed'",
+    "start": "netlify dev"
+  },
+  "dependencies": {
+    "airtable": "^0.12.2"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "keywords": ["ruleta", "carmencita", "netlify", "airtable"],
+  "author": "Tu Nombre",
+  "license": "MIT"
+}
