@@ -352,60 +352,88 @@
             gap: 5px;
         }
 
-        /* Sistema de Notificaciones Toast Definitivo */
+        /* Sistema de Notificaciones Toast Centrado y Visible */
         #toast-container {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             z-index: 9999;
             display: flex;
-            flex-direction: column-reverse; /* Apila toasts nuevos encima de los viejos */
+            flex-direction: column;
             gap: 15px;
-            pointer-events: none; /* Permite hacer clic "a través" del contenedor vacío */
+            pointer-events: none;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow: visible;
         }
 
         .toast {
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 15px 20px;
+            padding: 20px 25px;
             border-radius: 12px;
             font-weight: 600;
             color: white;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            min-width: 320px;
-            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            min-width: 300px;
+            max-width: 500px;
             opacity: 0;
-            transform: translateX(120%);
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            pointer-events: auto; /* Hace que cada toast individual sí sea clickeable */
+            transform: scale(0.8);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: auto;
+            margin: 0 auto;
         }
 
         .toast.show {
             opacity: 1;
-            transform: translateX(0);
+            transform: scale(1);
         }
 
-        .toast.success { background: linear-gradient(135deg, #2ecc71, #28a745); }
-        .toast.error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        .toast.info { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .toast.success { 
+            background: linear-gradient(135deg, #2ecc71, #28a745);
+            border-left: 5px solid #27ae60;
+        }
+        .toast.error { 
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-left: 5px solid #e74c3c;
+        }
+        .toast.info { 
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-left: 5px solid #3498db;
+        }
 
-        .toast-icon { font-size: 1.5rem; }
-        .toast-message { flex-grow: 1; text-align: left; }
+        .toast-icon { 
+            font-size: 1.8rem; 
+            margin-right: 5px;
+        }
+        .toast-message { 
+            flex-grow: 1; 
+            text-align: left; 
+            font-size: 1.1rem;
+            line-height: 1.4;
+        }
         .toast-close {
-            background: none;
+            background: rgba(255,255,255,0.2);
             border: none;
             color: white;
-            opacity: 0.8;
             cursor: pointer;
-            font-size: 1.5rem;
-            padding: 0 5px;
-            line-height: 1;
-            transition: opacity 0.2s ease;
+            font-size: 1.3rem;
+            padding: 8px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            margin-left: 10px;
         }
 
         .toast-close:hover {
-            opacity: 1;
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
         }
 
         /* Indicadores de Carga */
@@ -1394,10 +1422,13 @@
         // === FUNCIÓN DE ELIMINACIÓN DIRECTA (DEPRECADA) ===
         // Esta función es obsoleta, se usa eliminarPremioLocal con gestión local de premios
         
-        // SISTEMA DE NOTIFICACIONES TOAST (VERSIÓN DEFINITIVA)
+        // SISTEMA DE NOTIFICACIONES TOAST CENTRADO (VERSIÓN DEFINITIVA)
         function mostrarNotificacion(mensaje, tipo = 'info') {
             const container = document.getElementById('toast-container');
-            if (!container) return; // Parada de seguridad si el contenedor no existe
+            if (!container) return;
+
+            // Limpiar notificaciones existentes para evitar acumulación
+            container.innerHTML = '';
 
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
@@ -1412,32 +1443,37 @@
 
             container.appendChild(toast);
 
-            // Animar la entrada del toast
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
+            // Forzar reflow para asegurar que la animación funcione
+            toast.offsetHeight;
 
-            // Función para cerrar y eliminar el toast del DOM de forma segura
+            // Animar la entrada del toast
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Función para cerrar y eliminar el toast
             const closeToast = () => {
                 toast.classList.remove('show');
-                // Escuchar el final de la animación de salida para eliminar el elemento del DOM
-                toast.addEventListener('transitionend', () => {
+                setTimeout(() => {
                     if (toast.parentNode) {
                         toast.remove();
                     }
-                }, { once: true });
+                }, 400);
             };
 
-            // Asignar el evento al botón de cerrar del toast
+            // Asignar el evento al botón de cerrar
             toast.querySelector('.toast-close').addEventListener('click', closeToast);
 
-            // Auto-cerrar después de 4 segundos
-            setTimeout(closeToast, 4000);
+            // Auto-cerrar después de 5 segundos (un poco más de tiempo para leer)
+            setTimeout(closeToast, 5000);
         }
 
         function cerrarNotificacion() {
-            // Esta función ya no es necesaria con el nuevo sistema, pero la dejamos vacía
-            // por si alguna parte del código antiguo la llama, para evitar errores.
+            // Función de compatibilidad - cierra todas las notificaciones activas
+            const container = document.getElementById('toast-container');
+            if (container) {
+                container.innerHTML = '';
+            }
         }
         
         // === SISTEMA DE CONFIRMACIÓN PERSONALIZADA ===
