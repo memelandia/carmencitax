@@ -352,20 +352,19 @@
             gap: 5px;
         }
 
-        /* Sistema de Notificaciones Toast Centrado y Visible */
+        /* Sistema de Notificaciones Toast Centrado en VIEWPORT VISIBLE */
         #toast-container {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50vh;
+            left: 50vw;
             transform: translate(-50%, -50%);
-            z-index: 9999;
+            z-index: 10000;
             display: flex;
             flex-direction: column;
             gap: 15px;
             pointer-events: none;
-            max-width: 90vw;
-            max-height: 80vh;
-            overflow: visible;
+            width: auto;
+            height: auto;
         }
 
         .toast {
@@ -376,14 +375,15 @@
             border-radius: 12px;
             font-weight: 600;
             color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             min-width: 300px;
             max-width: 500px;
             opacity: 0;
             transform: scale(0.8);
             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             pointer-events: auto;
-            margin: 0 auto;
+            margin: 0;
+            position: relative;
         }
 
         .toast.show {
