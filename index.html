@@ -21,12 +21,19 @@
 <meta property="og:site_name" content="Carmencitax" />
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;600;700&display=swap');
+
+:root {
+    --valentine-deep-red: #9a031e;
+    --valentine-strong-pink: #f46079;
+    --valentine-soft-pink: #ffdde1;
+    --valentine-cream: #fff0f3;
+}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { 
 font-family: 'Poppins', sans-serif; text-align: center; min-height: 100vh;
-background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab, #ff9a9e, #8a2be2);
+background: linear-gradient(-45deg, var(--valentine-deep-red), var(--valentine-strong-pink), var(--valentine-soft-pink));
 background-size: 400% 400%; 
 animation: gradientMove 10s ease-in-out infinite;
 position: relative; overflow-x: hidden;
@@ -119,14 +126,14 @@ display: none; /* Oculto por defecto en escritorio */
 
 /* === ESTILOS DEL HISTORIAL DE PREMIOS === */
 .historial-section {
-background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 25px;
+background: rgba(255, 240, 243, 0.9); padding: 25px; border-radius: 25px;
 box-shadow: 0 15px 35px rgba(0,0,0,0.1); backdrop-filter: blur(15px);
 border: 1px solid rgba(255, 255, 255, 0.2); width: 320px; max-height: 500px;
 }
 
 .historial-title {
-font-family: 'Dancing Script', cursive; 
-color: #c44569; 
+font-family: 'Great Vibes', cursive; 
+color: var(--valentine-deep-red); 
 font-size: 2rem; 
 font-weight: 700; 
 text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.3);
@@ -150,7 +157,7 @@ border-radius: 10px;
 }
 
 .historial-lista::-webkit-scrollbar-thumb {
-background: linear-gradient(45deg, #ff6b9d, #c44569);
+background: linear-gradient(45deg, var(--valentine-strong-pink), var(--valentine-deep-red));
 border-radius: 10px;
 border: 2px solid rgba(255, 255, 255, 0.3);
 }
@@ -193,7 +200,7 @@ left: 100%;
 
 .premio-nombre {
 font-weight: 700;
-color: #c44569;
+color: var(--valentine-strong-pink);
 font-size: 0.95rem;
 margin-bottom: 5px;
 text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
@@ -244,19 +251,19 @@ opacity: 0.5;
 }
 .controls-section {
 display: flex; flex-direction: column; align-items: center; gap: 20px;
-background: rgba(255, 255, 255, 0.95); padding: 35px; border-radius: 25px;
+background: rgba(255, 240, 243, 0.9); padding: 35px; border-radius: 25px;
 box-shadow: 0 15px 35px rgba(0,0,0,0.1); backdrop-filter: blur(15px);
 border: 1px solid rgba(255, 255, 255, 0.2); width: 320px;
 }
 .controls-title { 
-font-family: 'Dancing Script', cursive; 
-color: #c44569; 
+font-family: 'Great Vibes', cursive; 
+color: var(--valentine-deep-red); 
 font-size: 2.5rem; 
 font-weight: 700; 
 text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.3);
 }
-        #ruleta { margin: 0 auto; width: 450px; height: 450px; border: 10px solid #c44569; border-radius: 50%; position: relative; box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
-        #flecha { width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-bottom: 50px solid #c44569; position: absolute; left: 50%; top: -50px; transform: translateX(-50%); z-index: 10; }
+        #ruleta { margin: 0 auto; width: 450px; height: 450px; border: 10px solid var(--valentine-deep-red); border-radius: 50%; position: relative; box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+        #flecha { width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-bottom: 50px solid var(--valentine-deep-red); position: absolute; left: 50%; top: -50px; transform: translateX(-50%); z-index: 10; }
         #opciones { 
             position: absolute; 
             width: 100%; 
@@ -275,7 +282,7 @@ text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.3);
             margin: 0 auto; 
             width: 450px; 
             height: 450px; 
-            border: 10px solid #c44569; 
+            border: 10px solid var(--valentine-deep-red); 
             border-radius: 50%; 
             position: relative; 
             box-shadow: 0 15px 30px rgba(0,0,0,0.2);
@@ -309,7 +316,7 @@ text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.3);
             height: 0; 
             border-left: 25px solid transparent; 
             border-right: 25px solid transparent; 
-            border-bottom: 50px solid #c44569; 
+            border-bottom: 50px solid var(--valentine-deep-red); 
             position: absolute; 
             left: 50%; 
             top: -50px; 
@@ -344,16 +351,16 @@ border: 2px solid rgba(255, 255, 255, 0.3);
 text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
 }
 .form-title { 
-font-family: 'Dancing Script', cursive; 
+font-family: 'Great Vibes', cursive; 
 font-size: 1.6rem; 
-color: #c44569; 
+color: var(--valentine-strong-pink); 
 margin-bottom: 10px; 
 text-shadow: 2px 2px 5px rgba(0,0,0,0.15);
 }
 #codigo { 
 padding: 18px 20px; 
 font-size: 1.1rem; 
-border: 3px solid #ff6b9d; 
+border: 3px solid var(--valentine-soft-pink); 
 border-radius: 20px; 
 width: 100%; 
 text-align: center; 
@@ -365,14 +372,14 @@ font-weight: 600;
 #codigo:focus {
 outline: none;
 background: white;
-box-shadow: 0 0 30px rgba(196, 69, 105, 0.5);
-border-color: #c44569;
+box-shadow: 0 0 25px rgba(244, 96, 121, 0.5);
+border-color: var(--valentine-strong-pink);
 transform: translateY(-2px);
 }
 #validarBtn { 
 padding: 15px 25px; 
 font-size: 1rem; 
-background: linear-gradient(45deg, #ff6b9d, #c44569); 
+background: linear-gradient(45deg, var(--valentine-strong-pink), var(--valentine-deep-red)); 
 color: white; 
 border: none; 
 border-radius: 20px; 
@@ -391,7 +398,7 @@ box-shadow: 0 8px 25px rgba(196, 69, 105, 0.4);
 #girarBtn { 
 padding: 18px 50px; 
 font-size: 1.2rem; 
-background: linear-gradient(45deg, #ff6b9d, #c44569, #ff6b9d); 
+background: linear-gradient(45deg, var(--valentine-strong-pink), var(--valentine-deep-red)); 
 color: white; 
 border: none; 
 border-radius: 30px; 
@@ -426,14 +433,14 @@ align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: 
 }
 .popup-overlay.show { opacity: 1; visibility: visible; }
 .popup-content {
-background: linear-gradient(135deg, #ff6b9d, #c44569); border-radius: 30px; padding: 40px; text-align: center;
+background: linear-gradient(135deg, var(--valentine-strong-pink), var(--valentine-deep-red)); border-radius: 30px; padding: 40px; text-align: center;
 max-width: 500px; width: 90%; transform: scale(0.5); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 .popup-overlay.show .popup-content { transform: scale(1); }
-.popup-title { font-family: 'Dancing Script', cursive; font-size: 3rem; color: white; margin-bottom: 20px; }
+.popup-title { font-family: 'Great Vibes', cursive; font-size: 3rem; color: white; margin-bottom: 20px; }
 .popup-prize { font-size: 1.5rem; color: white; font-weight: 700; margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 15px; }
 .popup-instructions { font-size: 0.9rem; color: white; opacity: 0.9; margin-top: 25px; font-weight: 500; }
-.popup-close { background: white; color: #c44569; border: none; padding: 15px 30px; border-radius: 25px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+.popup-close { background: white; color: var(--valentine-deep-red); border: none; padding: 15px 30px; border-radius: 25px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
 
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(10px); }
@@ -953,7 +960,7 @@ Aún no has ganado premios.<br>
 <script>
 // Variables globales para premios dinámicos
 let premiosDisponibles = [];
-const coloresPremios = [ "#ff6b9d", "#c44569", "#f8b500", "#ff9ff3", "#54a0ff", "#5f27cd", "#ff9f43", "#10ac84", "#ee5a24", "#0abde3", "#feca57", "#ff6348" ];
+const coloresPremios = [ "#c9184a", "#ff758f", "#ffb3c1", "#800f2f", "#fff0f3", "#ff8fa3", "#ffb3c1", "#590d22", "#ffccd5", "#a4133c" ];
 
 // Eliminado: const codigosValidosDefault - ahora usamos solo el backend
 // Eliminado: let codigosValidos = {} - ahora usamos solo el backend
@@ -1352,9 +1359,9 @@ ctx.arc(centroX, centroY, circleRadius, 0, 2 * Math.PI);
             
             // Gradiente radial para efecto de vidrio
             const gradient = ctx.createRadialGradient(centroX, centroY, 0, centroX, centroY, circleRadius);
-            gradient.addColorStop(0, 'rgba(196, 69, 105, 0.9)');
-            gradient.addColorStop(0.7, 'rgba(196, 69, 105, 0.7)');
-            gradient.addColorStop(1, 'rgba(196, 69, 105, 0.5)');
+            gradient.addColorStop(0, 'rgba(154, 3, 30, 0.9)');
+            gradient.addColorStop(0.7, 'rgba(154, 3, 30, 0.7)');
+            gradient.addColorStop(1, 'rgba(154, 3, 30, 0.5)');
             
             ctx.fillStyle = gradient;
 ctx.fill();
@@ -1376,7 +1383,7 @@ ctx.font = `bold ${emojiSize}px Poppins, sans-serif`;
             ctx.shadowOffsetY = 1;
 ctx.textBaseline = "middle";
 ctx.textAlign = "center";
-ctx.fillText("💎", centroX, centroY + 4); // +4 para centrar visualmente el emoji
+ctx.fillText("❤️", centroX, centroY + 4); // +4 para centrar visualmente el emoji
 }
 
         async function girarRuleta() {
