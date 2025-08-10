@@ -352,61 +352,43 @@
             gap: 5px;
         }
 
-        /* Sistema de Notificaciones */
-        .notification-banner {
-            position: relative;
-            padding: 15px 50px 15px 20px;
-            margin: 20px 0;
-            border-radius: 12px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-20px);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Nuevo Sistema de Notificaciones Toast */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .notification-banner.show {
-            transform: translateY(0);
+        .toast {
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            opacity: 0;
+            min-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
             opacity: 1;
         }
 
-        .notification-banner.success {
-            background: linear-gradient(135deg, #00b894, #00cec9);
-            color: white;
-            border-left: 5px solid #00a085;
-        }
+        .toast.success { background: linear-gradient(135deg, #2ecc71, #28a745); color: white; }
+        .toast.error { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .toast.info { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
 
-        .notification-banner.error {
-            background: linear-gradient(135deg, #e17055, #d63031);
-            color: white;
-            border-left: 5px solid #c0392b;
-        }
-
-        .notification-text {
-            flex: 1;
-            font-size: 1rem;
-        }
-
-        .notification-close {
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.8);
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            margin-left: 15px;
-        }
-
-        .notification-close:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            transform: scale(1.1);
-        }
+        .toast-icon { font-size: 1.5rem; }
+        .toast-message { flex-grow: 1; }
+        .toast-close { background: none; border: none; color: white; opacity: 0.7; cursor: pointer; font-size: 1.2rem; }
 
         /* Indicadores de Carga */
         .loading-container {
@@ -536,11 +518,8 @@
     <div class="container" style="display: none;">
         <h1>Panel de Administración</h1>
         
-        <!-- Sistema de notificaciones -->
-        <div id="notification-banner" class="notification-banner" style="display: none;">
-            <span class="notification-text"></span>
-            <button class="notification-close" onclick="cerrarNotificacion()">✕</button>
-        </div>
+        <!-- Nuevo contenedor para notificaciones Toast -->
+        <div id="toast-container"></div>
         
         <div class="navigation">
             <a href="index.html" class="nav-btn">🎯 Ir a la Ruleta</a>
@@ -1397,37 +1376,42 @@
         // === FUNCIÓN DE ELIMINACIÓN DIRECTA (DEPRECADA) ===
         // Esta función es obsoleta, se usa eliminarPremioLocal con gestión local de premios
         
-        // === SISTEMA DE NOTIFICACIONES ===
-        function mostrarNotificacion(mensaje, tipo = 'success') {
-            const banner = document.getElementById('notification-banner');
-            const textElement = banner.querySelector('.notification-text');
-            
-            // Configurar el mensaje
-            textElement.textContent = mensaje;
-            
-            // Limpiar clases anteriores y añadir la nueva
-            banner.className = `notification-banner ${tipo}`;
-            
-            // Mostrar con animación
-            banner.style.display = 'flex';
+        // NUEVO SISTEMA DE NOTIFICACIONES TOAST
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+
+            const iconMap = { success: '✅', error: '❌', info: 'ℹ️' };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${iconMap[tipo] || 'ℹ️'}</span>
+                <span class="toast-message">${mensaje}</span>
+                <button class="toast-close">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animar entrada
             setTimeout(() => {
-                banner.classList.add('show');
-            }, 10);
-            
-            // Auto-ocultar después de 4 segundos
-            setTimeout(() => {
-                cerrarNotificacion();
-            }, 4000);
+                toast.classList.add('show');
+            }, 100);
+
+            // Función para cerrar el toast
+            const closeToast = () => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            };
+
+            // Evento clic en el botón de cerrar
+            toast.querySelector('.toast-close').addEventListener('click', closeToast);
+
+            // Auto-cerrar después de 3 segundos
+            setTimeout(closeToast, 3000);
         }
 
-        function cerrarNotificacion() {
-            const banner = document.getElementById('notification-banner');
-            banner.classList.remove('show');
-            
-            setTimeout(() => {
-                banner.style.display = 'none';
-            }, 400);
-        }
+        // La función cerrarNotificacion ya no es necesaria, puedes eliminarla.
+        function cerrarNotificacion() {} // Déjala vacía o elimínala.
         
         // === SISTEMA DE CONFIRMACIÓN PERSONALIZADA ===
         function mostrarConfirmacion(mensaje, onConfirm, onCancel = null) {
