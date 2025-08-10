@@ -328,12 +328,19 @@
         }
 
         .copy-btn {
-            background: #3498db;
-            order: -1; /* Pone el botón de copiar primero */
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
         }
 
         .copy-btn:hover {
-            background: #2980b9;
+            background: #3498db;
+            transform: scale(1.1);
         }
 
         /* Ajuste para los botones de acción para que se muestren en fila */
@@ -1819,10 +1826,10 @@
                     div.className = `code-item ${codigo.usado ? 'used' : 'active'}`;
                     
                     const estado = codigo.usado ? 'Gastado' : 'Activo';
-                    let botones = `<button class="copy-btn action-btn" data-codigo="${codigo.codigoId}" title="Copiar código">� Copiar</button>`;
+                    let botones = `<button class="copy-btn action-btn" data-codigo="${codigo.codigoId}" title="Copiar código">Copiar</button>`;
 
                     if (codigo.usado) {
-                        botones += `<button class="delete-btn reactivate-btn action-btn" data-codigo="${codigo.codigoId}" data-action="reactivar" id="reactivar-${codigo.codigoId}">� Reactivar</button>`;
+                        botones += `<button class="delete-btn reactivate-btn action-btn" data-codigo="${codigo.codigoId}" data-action="reactivar" id="reactivar-${codigo.codigoId}">Reactivar</button>`;
                     }
 
                     botones += `<button class="delete-btn action-btn" data-codigo="${codigo.codigoId}" data-action="eliminar" id="eliminar-${codigo.codigoId}">🗑️ Eliminar</button>`;
