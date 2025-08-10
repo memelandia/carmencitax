@@ -352,15 +352,16 @@
             gap: 5px;
         }
 
-        /* Sistema de Notificaciones Toast Corregido */
+        /* Sistema de Notificaciones Toast Definitivo */
         #toast-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 9999;
             display: flex;
-            flex-direction: column-reverse; /* Apila toasts nuevos arriba de los viejos */
+            flex-direction: column-reverse; /* Apila toasts nuevos encima de los viejos */
             gap: 15px;
+            pointer-events: none; /* Permite hacer clic "a través" del contenedor vacío */
         }
 
         .toast {
@@ -377,7 +378,7 @@
             opacity: 0;
             transform: translateX(120%);
             transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            pointer-events: auto; /* Importante para que se puedan clickear */
+            pointer-events: auto; /* Hace que cada toast individual sí sea clickeable */
         }
 
         .toast.show {
@@ -400,6 +401,11 @@
             font-size: 1.5rem;
             padding: 0 5px;
             line-height: 1;
+            transition: opacity 0.2s ease;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
         }
 
         /* Indicadores de Carga */
@@ -1388,10 +1394,10 @@
         // === FUNCIÓN DE ELIMINACIÓN DIRECTA (DEPRECADA) ===
         // Esta función es obsoleta, se usa eliminarPremioLocal con gestión local de premios
         
-        // NUEVO SISTEMA DE NOTIFICACIONES TOAST (VERSIÓN CORREGIDA)
+        // SISTEMA DE NOTIFICACIONES TOAST (VERSIÓN DEFINITIVA)
         function mostrarNotificacion(mensaje, tipo = 'info') {
             const container = document.getElementById('toast-container');
-            if (!container) return; // Parar si el contenedor no existe
+            if (!container) return; // Parada de seguridad si el contenedor no existe
 
             const toast = document.createElement('div');
             toast.className = `toast ${tipo}`;
@@ -1406,25 +1412,33 @@
 
             container.appendChild(toast);
 
-            // Animar entrada del toast
+            // Animar la entrada del toast
             setTimeout(() => {
                 toast.classList.add('show');
             }, 10);
 
-            // Función para cerrar y eliminar el toast
+            // Función para cerrar y eliminar el toast del DOM de forma segura
             const closeToast = () => {
                 toast.classList.remove('show');
                 // Escuchar el final de la animación de salida para eliminar el elemento del DOM
-                toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+                toast.addEventListener('transitionend', () => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, { once: true });
             };
 
+            // Asignar el evento al botón de cerrar del toast
             toast.querySelector('.toast-close').addEventListener('click', closeToast);
 
+            // Auto-cerrar después de 4 segundos
             setTimeout(closeToast, 4000);
         }
 
-        // La función cerrarNotificacion ya no es necesaria, puedes eliminarla.
-        function cerrarNotificacion() {} // Déjala vacía o elimínala.
+        function cerrarNotificacion() {
+            // Esta función ya no es necesaria con el nuevo sistema, pero la dejamos vacía
+            // por si alguna parte del código antiguo la llama, para evitar errores.
+        }
         
         // === SISTEMA DE CONFIRMACIÓN PERSONALIZADA ===
         function mostrarConfirmacion(mensaje, onConfirm, onCancel = null) {
