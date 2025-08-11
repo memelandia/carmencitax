@@ -641,72 +641,11 @@
                         <input type="text" id="nombreModeloInput" placeholder="Ej: Scarlet Lucy" maxlength="25" style="width: 100%; padding: 12px; border: 2px solid #ff6b9d; border-radius: 10px; font-size: 1rem; margin-bottom: 10px;">
                         <button id="guardarNombreBtn" class="btn" style="width: 100%; padding: 12px 25px;">💎 Guardar Nombre</button>
                     </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #c44569;">Avatar de la Modelo:</label>
-                        
-                        <!-- Nueva zona de carga elegante -->
-                        <div id="uploadZone" style="
-                            width: 100%; 
-                            min-height: 150px; 
-                            border: 3px dashed #ff6b9d; 
-                            border-radius: 15px; 
-                            background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(196,69,105,0.1));
-                            display: flex; 
-                            flex-direction: column; 
-                            align-items: center; 
-                            justify-content: center; 
-                            cursor: pointer; 
-                            position: relative;
-                            transition: all 0.3s ease;
-                            margin-bottom: 10px;
-                        " onmouseover="this.style.borderColor='#c44569'; this.style.background='linear-gradient(135deg, rgba(255,107,157,0.2), rgba(196,69,105,0.2))'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(255,107,157,0.3)'" onmouseout="this.style.borderColor='#ff6b9d'; this.style.background='linear-gradient(135deg, rgba(255,107,157,0.1), rgba(196,69,105,0.1))'; this.style.transform='none'; this.style.boxShadow='none'">
-                            <input type="file" id="avatarUploadInput" accept="image/png,image/jpg,image/jpeg" style="
-                                position: absolute; 
-                                width: 100%; 
-                                height: 100%; 
-                                opacity: 0; 
-                                cursor: pointer;
-                                z-index: 2;
-                            ">
-                            <label for="avatarUploadInput" id="uploadLabel" style="
-                                display: flex; 
-                                flex-direction: column; 
-                                align-items: center; 
-                                justify-content: center; 
-                                width: 100%; 
-                                height: 100%; 
-                                cursor: pointer;
-                                text-align: center;
-                                pointer-events: none;
-                                z-index: 1;
-                            ">
-                                <span style="font-size: 2rem; margin-bottom: 10px;">📸</span>
-                                <span style="font-weight: 600; color: #c44569;">Haz clic aquí o arrastra tu imagen</span>
-                                <span style="font-size: 0.8rem; color: #666; margin-top: 5px;">(PNG, JPG - Max 5MB)</span>
-                            </label>
-                            
-                            <!-- Vista previa -->
-                            <img id="avatarPreview" style="
-                                display: none; 
-                                width: 100%; 
-                                height: 100%; 
-                                object-fit: cover; 
-                                border-radius: 12px;
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                z-index: 3;
-                            ">
-                        </div>
-                        
-                        <button id="guardarAvatarBtn" class="btn" style="width: 100%; padding: 12px 25px;" disabled>🖼️ Guardar Avatar</button>
-                    </div>
                 </div>
                 <div style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #74b9ff, #0984e3); color: white; border-radius: 12px;">
                     <h4 style="margin-bottom: 10px; font-family: 'Dancing Script', cursive; font-size: 1.3rem;">💡 Consejos:</h4>
                     <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
                         <li><strong>Nombre:</strong> Máximo 25 caracteres. Solo letras, números, espacios, guiones y puntos.</li>
-                        <li><strong>Avatar:</strong> Usa URLs de imágenes públicas (JPG, PNG, GIF). Tamaño recomendado: 200x200px.</li>
                     </ul>
                 </div>
             </div>
@@ -758,186 +697,6 @@
         // Variable global para almacenar los premios cargados dinámicamente
         let premiosDisponibles = [];
         
-        // === GESTIÓN DE AVATAR CON CARGA DE ARCHIVOS ===
-        async function redimensionarYConvertirImagen(file) {
-            return new Promise((resolve, reject) => {
-                // Validar tamaño del archivo (5MB máximo)
-                if (file.size > 5 * 1024 * 1024) {
-                    reject(new Error('El archivo es muy grande. Máximo 5MB permitido.'));
-                    return;
-                }
-
-                // Validar tipo de archivo
-                if (!file.type.match(/^image\/(png|jpg|jpeg)$/)) {
-                    reject(new Error('Solo se permiten archivos PNG, JPG o JPEG.'));
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        // Crear canvas para redimensionar
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        // Calcular nuevas dimensiones (máximo 800px en el lado más largo)
-                        const MAX_SIZE = 800;
-                        let { width, height } = img;
-
-                        if (width > height) {
-                            if (width > MAX_SIZE) {
-                                height = (height * MAX_SIZE) / width;
-                                width = MAX_SIZE;
-                            }
-                        } else {
-                            if (height > MAX_SIZE) {
-                                width = (width * MAX_SIZE) / height;
-                                height = MAX_SIZE;
-                            }
-                        }
-
-                        // Configurar canvas
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        // Dibujar imagen redimensionada
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Convertir a Base64 con compresión (80% calidad)
-                        const base64String = canvas.toDataURL('image/png', 0.8);
-                        resolve(base64String);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Error al cargar la imagen. Verifica que sea un archivo válido.'));
-                    img.src = e.target.result;
-                };
-                
-                reader.onerror = () => reject(new Error('Error al leer el archivo seleccionado.'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function configurarCargaAvatar() {
-            const uploadInput = document.getElementById('avatarUploadInput');
-            const uploadZone = document.getElementById('uploadZone');
-            const uploadLabel = document.getElementById('uploadLabel');
-            const previewImg = document.getElementById('avatarPreview');
-            const guardarBtn = document.getElementById('guardarAvatarBtn');
-            let imagenBase64 = null;
-
-            // Evento de cambio de archivo
-            uploadInput.addEventListener('change', async function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                try {
-                    mostrarNotificacion('Procesando imagen, por favor espera...', 'info');
-                    
-                    // Redimensionar y convertir
-                    imagenBase64 = await redimensionarYConvertirImagen(file);
-                    
-                    // Mostrar vista previa
-                    previewImg.src = imagenBase64;
-                    previewImg.style.display = 'block';
-                    uploadLabel.style.display = 'none';
-                    uploadZone.style.borderColor = '#4CAF50';
-                    uploadZone.style.borderStyle = 'solid';
-                    guardarBtn.disabled = false;
-                    
-                    mostrarNotificacion('✨ Imagen cargada y optimizada correctamente. ¡Ahora puedes guardarla!', 'success');
-                    
-                } catch (error) {
-                    console.error('Error al procesar imagen:', error);
-                    mostrarNotificacion(error.message, 'error');
-                    // Resetear estado
-                    resetearCargaAvatar();
-                }
-            });
-
-            // Eventos drag and drop
-            uploadZone.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadZone.style.borderColor = '#c44569';
-                uploadZone.style.background = 'linear-gradient(135deg, rgba(255,107,157,0.3), rgba(196,69,105,0.3))';
-                uploadZone.style.transform = 'scale(1.02)';
-            });
-
-            uploadZone.addEventListener('dragleave', function() {
-                if (!previewImg.style.display || previewImg.style.display === 'none') {
-                    uploadZone.style.borderColor = '#ff6b9d';
-                    uploadZone.style.background = 'linear-gradient(135deg, rgba(255,107,157,0.1), rgba(196,69,105,0.1))';
-                    uploadZone.style.transform = 'none';
-                }
-            });
-
-            uploadZone.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadZone.style.transform = 'none';
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    uploadInput.files = files;
-                    uploadInput.dispatchEvent(new Event('change'));
-                }
-            });
-
-            // Botón guardar avatar
-            guardarBtn.addEventListener('click', async function() {
-                if (!imagenBase64) {
-                    mostrarNotificacion('Primero debes cargar una imagen válida.', 'error');
-                    return;
-                }
-
-                const btn = this;
-                const originalText = btn.textContent;
-                
-                try {
-                    btn.disabled = true;
-                    btn.textContent = 'Guardando... ✨';
-
-                    const response = await fetch('/.netlify/functions/config-manager', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ nuevaAvatarURL: imagenBase64 })
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok && result.success) {
-                        mostrarNotificacion('🎉 Avatar guardado exitosamente. Se mostrará en la ruleta!', 'success');
-                    } else {
-                        mostrarNotificacion(result.message || 'Error al guardar el avatar', 'error');
-                    }
-
-                } catch (error) {
-                    console.error('Error al guardar avatar:', error);
-                    mostrarNotificacion('Error de conexión. Verifica tu internet e intenta de nuevo.', 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                }
-            });
-
-            // Función para resetear el estado de carga
-            function resetearCargaAvatar() {
-                previewImg.style.display = 'none';
-                uploadLabel.style.display = 'flex';
-                uploadZone.style.borderColor = '#ff6b9d';
-                uploadZone.style.borderStyle = 'dashed';
-                guardarBtn.disabled = true;
-                imagenBase64 = null;
-                uploadInput.value = '';
-            }
-
-            // Click en la imagen previa para cambiar la imagen
-            previewImg.addEventListener('click', function() {
-                resetearCargaAvatar();
-            });
-        }
-
         // === GESTIÓN DE CONFIGURACIÓN VISUAL ===
         async function cargarConfiguracion() {
             try {
@@ -966,23 +725,6 @@
                 const nombreInput = document.getElementById('nombreModeloInput');
                 if (nombreInput && result.data.nombreModelo) {
                     nombreInput.value = result.data.nombreModelo;
-                }
-                
-                // Actualizar vista previa del avatar si existe
-                if (result.data.avatarURL && result.data.avatarURL.trim() && result.data.avatarURL.startsWith('data:image/')) {
-                    const previewImg = document.getElementById('avatarPreview');
-                    const uploadLabel = document.getElementById('uploadLabel');
-                    const uploadZone = document.getElementById('uploadZone');
-                    const guardarBtn = document.getElementById('guardarAvatarBtn');
-                    
-                    if (previewImg && uploadLabel && uploadZone) {
-                        previewImg.src = result.data.avatarURL;
-                        previewImg.style.display = 'block';
-                        uploadLabel.style.display = 'none';
-                        uploadZone.style.borderColor = '#4CAF50';
-                        uploadZone.style.borderStyle = 'solid';
-                        if (guardarBtn) guardarBtn.disabled = false;
-                    }
                 }
                 
                 return result.data;
@@ -1565,9 +1307,6 @@
             // Cargar premios dinámicamente
             await cargarYMostrarPremios();
             
-            // Configurar carga de avatar
-            configurarCargaAvatar();
-            
             // Inicializar el selector de premios con los datos cargados
             document.getElementById('numTiradas').addEventListener('change', manejarCambioTiradas);
             document.getElementById('numTiradas').addEventListener('input', manejarCambioTiradas);
@@ -1582,7 +1321,6 @@
             
             // Event listeners para personalización visual
             document.getElementById('guardarNombreBtn').addEventListener('click', guardarNombreModelo);
-            // El avatar ya se configura en configurarCargaAvatar()
             
             // Permitir guardar con Enter en el campo de nombre
             document.getElementById('nombreModeloInput').addEventListener('keypress', function(e) {
@@ -2019,7 +1757,7 @@
         }
 
         function generarCodigoAleatorio() {
-            const prefix = 'CARMEN-';
+            const prefix = 'RULETAVIP';
             const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Caracteres sin O y 0 para evitar confusiones
             let result = '';
             for (let i = 0; i < 4; i++) {
