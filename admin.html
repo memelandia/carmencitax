@@ -352,88 +352,64 @@
             gap: 5px;
         }
 
-        /* Sistema de Notificaciones Toast Centrado en VIEWPORT VISIBLE */
-        #toast-container {
+        /* === SISTEMA DE NOTIFICACIONES BANNER SUPERIOR === */
+        .notification-banner {
             position: fixed;
-            top: 50vh;
-            left: 50vw;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
             z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            pointer-events: none;
-            width: auto;
-            height: auto;
+            display: none;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
         }
 
-        .toast {
+        .notification-banner.show {
+            transform: translateY(0);
+        }
+
+        .notification-banner.success {
+            background: linear-gradient(135deg, #5cb85c, #449d44);
+        }
+
+        .notification-banner.error {
+            background: linear-gradient(135deg, #d9534f, #c9302c);
+        }
+
+        .notification-banner.info {
+            background: linear-gradient(135deg, #5bc0de, #31b0d5);
+        }
+
+        .notification-content {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 15px;
-            padding: 20px 25px;
-            border-radius: 12px;
-            font-weight: 600;
+            padding: 15px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .notification-text {
             color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            min-width: 300px;
-            max-width: 500px;
-            opacity: 0;
-            transform: scale(0.8);
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            pointer-events: auto;
-            margin: 0;
-            position: relative;
+            font-weight: 600;
+            font-size: 1rem;
+            flex-grow: 1;
         }
 
-        .toast.show {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .toast.success { 
-            background: linear-gradient(135deg, #2ecc71, #28a745);
-            border-left: 5px solid #27ae60;
-        }
-        .toast.error { 
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            border-left: 5px solid #e74c3c;
-        }
-        .toast.info { 
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            border-left: 5px solid #3498db;
-        }
-
-        .toast-icon { 
-            font-size: 1.8rem; 
-            margin-right: 5px;
-        }
-        .toast-message { 
-            flex-grow: 1; 
-            text-align: left; 
-            font-size: 1.1rem;
-            line-height: 1.4;
-        }
-        .toast-close {
-            background: rgba(255,255,255,0.2);
+        .notification-close {
+            background: none;
             border: none;
             color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
             cursor: pointer;
-            font-size: 1.3rem;
-            padding: 8px;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            margin-left: 10px;
+            padding: 0 10px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
         }
 
-        .toast-close:hover {
-            background: rgba(255,255,255,0.3);
-            transform: scale(1.1);
+        .notification-close:hover {
+            opacity: 1;
         }
 
         /* Indicadores de Carga */
@@ -561,11 +537,16 @@
     </style>
 </head>
 <body>
+    <!-- Banner de notificaciones -->
+    <div id="notification-banner" class="notification-banner">
+        <div class="notification-content">
+            <span class="notification-text"></span>
+            <button class="notification-close" onclick="cerrarNotificacion()">×</button>
+        </div>
+    </div>
+
     <div class="container" style="display: none;">
         <h1>Panel de Administración</h1>
-        
-        <!-- Nuevo contenedor para notificaciones Toast -->
-        <div id="toast-container"></div>
         
         <div class="navigation">
             <a href="index.html" class="nav-btn">🎯 Ir a la Ruleta</a>
@@ -1422,58 +1403,36 @@
         // === FUNCIÓN DE ELIMINACIÓN DIRECTA (DEPRECADA) ===
         // Esta función es obsoleta, se usa eliminarPremioLocal con gestión local de premios
         
-        // SISTEMA DE NOTIFICACIONES TOAST CENTRADO (VERSIÓN DEFINITIVA)
-        function mostrarNotificacion(mensaje, tipo = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
+        // SISTEMA DE NOTIFICACIONES BANNER SUPERIOR (IGUAL QUE INDEX.HTML)
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const banner = document.getElementById('notification-banner');
+            const textElement = banner.querySelector('.notification-text');
 
-            // Limpiar notificaciones existentes para evitar acumulación
-            container.innerHTML = '';
+            // Configurar el mensaje
+            textElement.textContent = mensaje;
 
-            const toast = document.createElement('div');
-            toast.className = `toast ${tipo}`;
+            // Limpiar clases anteriores y añadir la nueva
+            banner.className = `notification-banner ${tipo}`;
 
-            const iconMap = { success: '✅', error: '❌', info: 'ℹ️' };
+            // Mostrar con animación
+            banner.style.display = 'flex';
+            setTimeout(() => {
+                banner.classList.add('show');
+            }, 10);
 
-            toast.innerHTML = `
-                <span class="toast-icon">${iconMap[tipo] || 'ℹ️'}</span>
-                <span class="toast-message">${mensaje}</span>
-                <button class="toast-close">✕</button>
-            `;
-
-            container.appendChild(toast);
-
-            // Forzar reflow para asegurar que la animación funcione
-            toast.offsetHeight;
-
-            // Animar la entrada del toast
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
-            });
-
-            // Función para cerrar y eliminar el toast
-            const closeToast = () => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, 400);
-            };
-
-            // Asignar el evento al botón de cerrar
-            toast.querySelector('.toast-close').addEventListener('click', closeToast);
-
-            // Auto-cerrar después de 5 segundos (un poco más de tiempo para leer)
-            setTimeout(closeToast, 5000);
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                cerrarNotificacion();
+            }, 5000);
         }
 
         function cerrarNotificacion() {
-            // Función de compatibilidad - cierra todas las notificaciones activas
-            const container = document.getElementById('toast-container');
-            if (container) {
-                container.innerHTML = '';
-            }
+            const banner = document.getElementById('notification-banner');
+            banner.classList.remove('show');
+
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 400);
         }
         
         // === SISTEMA DE CONFIRMACIÓN PERSONALIZADA ===
