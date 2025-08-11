@@ -1757,8 +1757,8 @@
         }
 
         function generarCodigoAleatorio() {
-            const prefix = 'RULETAVIP';
-            const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // Caracteres sin O y 0 para evitar confusiones
+            const prefix = 'USERVIP';
+            const chars = '123456789'; // Caracteres sin O y 0 para evitar confusiones
             let result = '';
             for (let i = 0; i < 4; i++) {
                 result += chars.charAt(Math.floor(Math.random() * chars.length));
