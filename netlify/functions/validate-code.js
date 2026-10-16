@@ -1,81 +1,38 @@
-const { codesTable, premiosStringToArray, corsHeaders } = require('./utils/airtable');
+// Valida un código para la ruleta pública. Misma respuesta que la versión anterior
+// (nombreFan, premios, tiradasRestantes) + el historial de premios de la ronda actual, que ahora vive en el servidor.
+const { sql, json, ruletaId, leerBody, normCodigo, handler } = require('./utils/db');
+const textos = require('./utils/textos');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
+exports.handler = handler(['POST'], async (event) => {
+  const rid = await ruletaId();
+  const [r] = await sql`SELECT idioma FROM ruletas.ruleta WHERE id = ${rid}`;
+  const t = textos(r && r.idioma);
+  const body = leerBody(event);
+  const codigo = normCodigo(body && body.codigoId);
+  if (!codigo) return json(400, { success: false, message: t.requerido });
+  if (codigo.length > 80) return json(404, { success: false, message: t.noEncontrado });
 
-    if (event.httpMethod !== 'POST') {
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-    }
-    
-    try {
-        const { codigoId } = JSON.parse(event.body);
-        
-        if (!codigoId) {
-            return { 
-                statusCode: 400, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'El campo codigoId es requerido.' }) 
-            };
-        }
-        
-        // Buscar código en Airtable
-        const records = await codesTable.select({ 
-            maxRecords: 1, 
-            filterByFormula: `{ID} = '${codigoId}'` 
-        }).firstPage();
-        
-        if (records.length === 0) {
-            return { 
-                statusCode: 404, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'Código no encontrado' }) 
-            };
-        }
-        
-        const codeData = records[0].fields;
-        const tiradasRestantes = codeData['Tiradas Restantes'] || 0;
-        
-        // Verificar si el código tiene tiradas disponibles
-        if (codeData.Usado || tiradasRestantes <= 0) {
-            return { 
-                statusCode: 403, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ 
-                    success: false, 
-                    message: 'Este código ya ha sido utilizado o no tiene tiradas disponibles' 
-                }) 
-            };
-        }
-        
-        // Retornar datos del código válido
-        return {
-            statusCode: 200,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                success: true,
-                data: {
-                    nombreFan: codeData['Nombre Fan'],
-                    premios: premiosStringToArray(codeData.Premios),
-                    tiradasRestantes: tiradasRestantes
-                }
-            })
-        };
-    } catch (error) {
-        console.error('Error en validate-code:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+  const [c] = await sql`
+    SELECT id, nombre_fan, premios, tiradas_totales, tiradas_restantes, usado, ronda, ganados_previos
+    FROM ruletas.codigo
+    WHERE ruleta_id = ${rid} AND codigo_norm = ${codigo} AND eliminado_at IS NULL`;
+  if (!c) return json(404, { success: false, message: t.noEncontrado });
+  if (c.usado || c.tiradas_restantes <= 0) return json(403, { success: false, message: t.usado });
+
+  const historial = await sql`
+    SELECT premio, creado_at FROM ruletas.tirada
+    WHERE codigo_id = ${c.id} AND ronda = ${c.ronda} ORDER BY creado_at DESC, id DESC`;
+
+  return json(200, {
+    success: true,
+    data: {
+      nombreFan: c.nombre_fan,
+      premios: c.premios || [],
+      tiradasRestantes: c.tiradas_restantes,
+      tiradasTotales: c.tiradas_totales,
+      historial: historial.map((h) => ({ nombre: h.premio, timestamp: new Date(h.creado_at).getTime() })),
+      // códigos que ya giraron antes de la migración: el detalle de esos premios quedó en el navegador del fan
+      ganadosPrevios: c.ronda === 1 ? c.ganados_previos : 0,
+    },
+  });
+});

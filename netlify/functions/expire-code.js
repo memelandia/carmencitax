@@ -1,67 +1,16 @@
-const { codesTable, corsHeaders } = require('./utils/airtable');
+// Expirar un código: queda usado y sin tiradas (igual que antes). Solo admin.
+const { sql, json, ruletaId, leerBody, verificarAdmin, noAutorizado, evento, normCodigo, handler } = require('./utils/db');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
-
-    if (event.httpMethod !== 'POST') {
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-    }
-
-    try {
-        const { codigoId } = JSON.parse(event.body);
-        
-        if (!codigoId) {
-            return { 
-                statusCode: 400, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'El campo codigoId es requerido.' }) 
-            };
-        }
-
-        // Buscar el código en Airtable
-        const records = await codesTable.select({ 
-            maxRecords: 1, 
-            filterByFormula: `{ID} = '${codigoId}'` 
-        }).firstPage();
-        
-        if (records.length === 0) {
-            return { 
-                statusCode: 404, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'Código no encontrado para expirar' }) 
-            };
-        }
-
-        // Expirar el código usando sintaxis robusta
-        await codesTable.update([{
-            id: records[0].id,
-            fields: { 
-                "Usado": true,
-                "Tiradas Restantes": 0 
-            }
-        }]);
-
-        return { 
-            statusCode: 200, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: true, message: 'Código expirado con éxito.' }) 
-        };
-    } catch (error) {
-        console.error('Error en expire-code:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+exports.handler = handler(['POST'], async (event) => {
+  const rid = await ruletaId();
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const codigo = normCodigo((leerBody(event) || {}).codigoId);
+  if (!codigo) return json(400, { success: false, message: 'El campo codigoId es requerido.' });
+  const [r] = await sql`
+    UPDATE ruletas.codigo SET usado = true, tiradas_restantes = 0, expirado_at = NOW(), actualizado_at = NOW()
+    WHERE ruleta_id = ${rid} AND codigo_norm = ${codigo} AND eliminado_at IS NULL
+    RETURNING id`;
+  if (!r) return json(404, { success: false, message: 'Código no encontrado para expirar' });
+  await evento(rid, 'expirar', { codigo }, r.id);
+  return json(200, { success: true, message: 'Código expirado con éxito.' });
+});

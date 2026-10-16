@@ -1,70 +1,18 @@
-const { codesTable, corsHeaders } = require('./utils/airtable');
+// Reactivar: vuelve a tener todas sus tiradas (igual que antes). Abre una ronda nueva para que el fan
+// pueda volver a ganar los premios del código. Solo admin.
+const { sql, json, ruletaId, leerBody, verificarAdmin, noAutorizado, evento, normCodigo, handler } = require('./utils/db');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
-
-    if (event.httpMethod !== 'POST') {
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-    }
-
-    try {
-        const { codigoId } = JSON.parse(event.body);
-        
-        if (!codigoId) {
-            return { 
-                statusCode: 400, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'El campo codigoId es requerido.' }) 
-            };
-        }
-
-        // Buscar el código en Airtable
-        const records = await codesTable.select({ 
-            maxRecords: 1, 
-            filterByFormula: `{ID} = '${codigoId}'` 
-        }).firstPage();
-        
-        if (records.length === 0) {
-            return { 
-                statusCode: 404, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'Código no encontrado para reactivar' }) 
-            };
-        }
-        
-        const record = records[0];
-        const tiradasTotales = record.fields['Tiradas Totales'] || 0;
-        
-        // Reactivar el código usando sintaxis robusta
-        await codesTable.update([{
-            id: records[0].id,
-            fields: { 
-                "Usado": false,
-                "Tiradas Restantes": tiradasTotales
-            }
-        }]);
-
-        return { 
-            statusCode: 200, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: true, message: 'Código reactivado con éxito.' }) 
-        };
-    } catch (error) {
-        console.error('Error en reactivate-code:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+exports.handler = handler(['POST'], async (event) => {
+  const rid = await ruletaId();
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const codigo = normCodigo((leerBody(event) || {}).codigoId);
+  if (!codigo) return json(400, { success: false, message: 'El campo codigoId es requerido.' });
+  const [r] = await sql`
+    UPDATE ruletas.codigo SET usado = false, tiradas_restantes = tiradas_totales, ronda = ronda + 1, ganados_previos = 0,
+           expirado_at = NULL, reactivado_at = NOW(), actualizado_at = NOW()
+    WHERE ruleta_id = ${rid} AND codigo_norm = ${codigo} AND eliminado_at IS NULL
+    RETURNING id, tiradas_totales`;
+  if (!r) return json(404, { success: false, message: 'Código no encontrado para reactivar' });
+  await evento(rid, 'reactivar', { codigo, tiradas: r.tiradas_totales }, r.id);
+  return json(200, { success: true, message: 'Código reactivado con éxito.' });
+});

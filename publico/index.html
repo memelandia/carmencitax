@@ -465,46 +465,44 @@ max-width: 500px; width: 90%; transform: scale(0.5); transition: all 0.4s cubic-
 
 /* Tablets y pantallas medianas */
 @media (max-width: 992px) {
-    /* --- INICIA EL LAYOUT GRID PARA TABLET/MÓVIL --- */
+    /* --- LAYOUT MÓVIL: una sola columna, todo centrado --- */
     .main-content {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px; /* Gap más reducido para móviles */
-        align-items: start;
-        justify-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
         width: 100%;
     }
 
-    /* Posicionamiento en la Grid */
-    .controls-container {
-        grid-column: 1 / 2;
-        justify-self: center; /* Centrado en su columna */
-    }
+    /* Orden natural: datos → rueda → premios */
+    .controls-container  { order: 1; }
+    .ruleta-section      { order: 2; }
+    .historial-container { order: 3; }
+
+    .controls-container,
+    .ruleta-section,
     .historial-container {
-        grid-column: 2 / 3;
-        justify-self: center; /* Centrado en su columna */
-    }
-    .ruleta-section {
-        grid-column: 1 / -1; /* Ocupa todo el ancho */
+        width: 100%;
+        justify-self: center;
     }
 
-    /* Tamaños flexibles para los Paneles */
+    /* Tarjetas de ancho cómodo y centradas */
     .controls-section,
     .historial-section {
         width: 100%;
-        max-width: 280px; /* Reducido para que quepan mejor lado a lado */
-        padding: 15px; /* Padding reducido */
-        margin: 0;
+        max-width: 440px;
+        padding: 22px;
+        margin: 0 auto;
         height: auto;
     }
 
-    /* Otros ajustes generales para tablet/móvil */
     .historial-section, .historial-lista { max-height: 400px; }
     .historial-title { font-size: 1.8rem; }
     .controls-title { font-size: 2.2rem; }
-    #ruleta { width: 400px; height: 400px; border-width: 8px; }
+    /* Rueda que se adapta al ancho de pantalla (el canvas escala al 100%) */
+    #ruleta { width: min(86vw, 400px); height: min(86vw, 400px); border-width: 8px; }
     #flecha { border-left-width: 22px; border-right-width: 22px; border-bottom-width: 45px; top: -45px; }
-    #girarBtn { min-width: 250px; padding: 16px 40px; font-size: 1.1rem; }
+    #girarBtn { width: 100%; max-width: 360px; min-width: 0; padding: 16px 32px; font-size: 1.1rem; }
 }
 
 /* Tablets pequeñas y móviles grandes */
@@ -514,11 +512,13 @@ padding: 15px;
 gap: 15px;
 }
 
+.controls-section,
 .historial-section {
-width: 280px;
+width: 100%;
+max-width: 420px;
 padding: 18px;
-max-height: 350px;
 }
+.historial-section { max-height: 350px; }
 
 .historial-title {
 font-size: 1.6rem;
@@ -635,11 +635,13 @@ font-size: 1rem;
 padding: 10px;
 }
 
+.controls-section,
 .historial-section {
-width: 260px;
+width: 100%;
+max-width: 380px;
 padding: 15px;
-max-height: 300px;
 }
+.historial-section { max-height: 300px; }
 
 .historial-title {
 font-size: 1.4rem;
@@ -676,8 +678,8 @@ margin-bottom: 10px;
 }
 
 #ruleta {
-width: 280px;
-height: 280px;
+width: min(88vw, 360px);
+height: min(88vw, 360px);
 border-width: 6px;
 }
 
@@ -762,8 +764,8 @@ font-size: 1.6rem;
 }
 
 #ruleta {
-width: 250px;
-height: 250px;
+width: min(90vw, 300px);
+height: min(90vw, 300px);
 border-width: 5px;
 }
 
@@ -893,6 +895,46 @@ animation: spin 1s linear infinite;
 margin-right: 8px;
 }
 </style>
+
+<style id="ruleta-mejoras">
+/* ===== Layout móvil: una sola columna, centrado (override) ===== */
+@media (max-width: 992px) {
+  .main-content { display:flex !important; flex-direction:column !important; align-items:center !important; justify-items:center !important; gap:24px !important; }
+  .controls-container { order:1; } .ruleta-section { order:2; } .historial-container { order:3; }
+  .controls-container, .ruleta-section, .historial-container { width:100% !important; justify-self:center !important; }
+  .controls-section, .historial-section { width:100% !important; max-width:440px !important; margin:0 auto !important; }
+  #ruleta { width:min(86vw, 400px) !important; height:min(86vw, 400px) !important; }
+  #girarBtn { width:100% !important; max-width:360px !important; min-width:0 !important; }
+}
+@media (max-width: 480px) {
+  .controls-section, .historial-section { max-width:400px !important; }
+  #ruleta { width:min(88vw, 360px) !important; height:min(88vw, 360px) !important; }
+}
+/* ===== Foto de la modelo como fondo de la tarjeta del código ===== */
+.controls-section { position:relative; overflow:hidden; isolation:isolate; }
+.controls-section.has-foto::before {
+  content:''; position:absolute; inset:0; z-index:-2;
+  background-size:cover; background-position:center 25%;
+  filter:blur(1.5px) saturate(1.14) brightness(0.96);
+  transform:scale(1.08); opacity:0.94;
+}
+.controls-section.has-foto::after {
+  content:''; position:absolute; inset:0; z-index:-1;
+  background:linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.62) 100%);
+}
+.controls-section.has-foto .controls-title { text-shadow:0 1px 3px rgba(255,255,255,0.9), 0 2px 12px rgba(0,0,0,0.22); }
+/* ===== "Escribe tu Código" como etiqueta píldora limpia ===== */
+.controls-section .form-title {
+  font-family:'Poppins', sans-serif !important;
+  font-size:0.8rem !important; font-weight:600 !important;
+  letter-spacing:0.16em; text-transform:uppercase;
+  text-shadow:none !important;
+  display:inline-block; padding:7px 18px; border-radius:999px;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  margin:2px auto 14px !important;
+  color:#9c1840 !important; background:rgba(255,255,255,0.75); border:1px solid rgba(0,0,0,0.05); box-shadow:0 4px 14px rgba(0,0,0,0.10);
+}
+</style>
 </head>
 <body>
 <!-- Banner de notificaciones -->
@@ -923,7 +965,7 @@ margin-right: 8px;
 </div>
 <div class="main-content">
 <div class="controls-container">
-<div class="controls-title" id="tituloModelo">Bella Rey</div>
+<div class="controls-title" id="tituloModelo">Carmencitax</div>
 <div class="controls-section">
 <div class="form-title">💝 Código Exclusivo</div>
 <div id="formulario">
@@ -1270,7 +1312,7 @@ let rotacion = anguloMedio;
 if (rotacion > Math.PI/2 && rotacion < 3*Math.PI/2) rotacion += Math.PI;
 ctx.rotate(rotacion);
 
-let textoLimpio = premiosDisponibles[i].replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim().toUpperCase();
+let textoLimpio = premiosDisponibles[i].trim().toUpperCase();
 const palabras = textoLimpio.split(' ');
 let lineas = [], lineaActual = '';
 palabras.forEach(palabra => {
@@ -1408,9 +1450,10 @@ ctx.fillText("❤️", centroX, centroY + 4); // +4 para centrar visualmente el 
             soundSpin.loop = true;
             soundSpin.play();
             
-            // Seleccionar un premio aleatorio de la lista FILTRADA
-            const indiceGanadorEnPool = Math.floor(Math.random() * premiosDisponiblesParaEsteGiro.length);
-            const premioGanado = premiosDisponiblesParaEsteGiro[indiceGanadorEnPool];
+            // El servidor elige el premio y descuenta la tirada (PostgreSQL, atómico e idempotente)
+            const __giro = await window.__girarEnServidor();
+            if (!__giro || !__giro.success) { window.__giroFallido(__giro); return; }
+            const premioGanado = __giro.premio;
             const indiceEnRuletaCompleta = premiosDisponibles.findIndex(p => p === premioGanado);
 
             if (indiceEnRuletaCompleta === -1) {
@@ -1464,25 +1507,8 @@ ctx.fillText("❤️", centroX, centroY + 4); // +4 para centrar visualmente el 
                 mostrarMensaje(`🎉 ¡Felicidades ${nombreUsuario}! Ganaste: <b>${premioGanado}</b>`);
                 agregarPremioAlHistorial(premioGanado);
 
-                tiradasRestantes--;
+                tiradasRestantes = __giro.tiradasRestantes; // ya descontada en el servidor
 
-                try {
-                    const response = await fetch('/.netlify/functions/gastar-tiro', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ codigoId: codigoActual })
-                    });
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        if (result.tiradasRestantes !== undefined) tiradasRestantes = result.tiradasRestantes;
-                    } else {
-                        console.error('Error al gastar tiro:', result.message);
-                        mostrarNotificacion('Hubo un problema al registrar tu tirada.', 'warning');
-                    }
-                } catch (error) {
-                    console.error('Error de conexión al gastar tiro:', error);
-                    mostrarNotificacion('Error de conexión al registrar la tirada.', 'warning');
-                }
 
                 // NUEVA LÓGICA: Verificar si se han ganado todos los premios únicos
                 const premiosYaGanadosActualizados = historialPremios.map(item => item.nombre);
@@ -1584,7 +1610,7 @@ validarBtn.style.background = 'linear-gradient(45deg, #10ac84, #00d2d3)';
 validarBtn.textContent = '✅ Código Válido';
 
 // Inicializar el historial de premios
-inicializarHistorial();
+window.__historialDesdeServidor(result.data); inicializarHistorial(); if (!historialPremios.length && window.__historialServidor && window.__historialServidor.length) { historialPremios = window.__historialServidor.slice(); contadorPremios = historialPremios.length; actualizarHistorialVisual(); }
 
 // Debe ejecutarse primero
 const progreso = verificarProgresoPremiosUnicos();
@@ -1788,7 +1814,7 @@ console.log('✅ Configuración cargada exitosamente:', result.data);
 if (result.data.nombreModelo) {
 const tituloElement = document.querySelector('.controls-title');
 if (tituloElement) {
-tituloElement.textContent = `${result.data.nombreModelo} 💖`;
+tituloElement.textContent = `${result.data.nombreModelo}`;
 }
 // También actualizar el título de la página
 document.title = `${result.data.nombreModelo} - Ruleta Interactiva`;
@@ -1828,7 +1854,7 @@ premiosDisponibles = ['Premio Sorpresa', 'Pack Fotos Hot', 'Videollamada 5 minut
 // Mostrar título por defecto
 const tituloElement = document.querySelector('.controls-title');
 if (tituloElement) {
-tituloElement.textContent = 'Bella Rey 💖';
+tituloElement.textContent = 'Carmencitax 💖';
 }
 
 // Dibujar ruleta con configuración por defecto
@@ -1849,7 +1875,7 @@ const ruletaSection = document.querySelector('.ruleta-section');
 // Crear sección de controles
 controlsContainer.innerHTML = `
                <div class="controls-section">
-                   <h2 class="controls-title">Bella Rey 💖</h2>
+                   <h2 class="controls-title">Carmencitax 💖</h2>
                    <div class="form-title">🎯Escribe tu Código🎯</div>
                    <input type="text" id="codigo" placeholder="Escribe tu código aquí..." autocomplete="off">
                    <button id="validarBtn" class="button">✨ Validar Código ✨</button>
@@ -2010,5 +2036,28 @@ dibujarRuletaCompleta();
 
 <!-- Canvas Confetti Library -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+<script id="foto-modelo-loader">
+(function () {
+  function aplicar(dataUrl) {
+    if (!dataUrl || dataUrl.indexOf('data:image/') !== 0) return;
+    var st = document.getElementById('foto-modelo-style') || document.createElement('style');
+    st.id = 'foto-modelo-style';
+    st.textContent = '.controls-section.has-foto::before{background-image:url("' + dataUrl + '")}';
+    document.head.appendChild(st);
+    var apply = function () {
+      var cs = document.querySelector('.controls-section');
+      if (cs) { cs.classList.add('has-foto'); return true; }
+      return false;
+    };
+    if (!apply()) { var n = 0, iv = setInterval(function () { if (apply() || ++n > 40) clearInterval(iv); }, 150); }
+  }
+  fetch('/.netlify/functions/config-manager')
+    .then(function (r) { return r.json(); })
+    .then(function (j) { if (j && j.data) aplicar(j.data.avatarURL); })
+    .catch(function () {});
+})();
+</script>
+<script src="ruleta-servidor.js"></script>
 </body>
 </html>

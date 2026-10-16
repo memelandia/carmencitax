@@ -1,61 +1,19 @@
-const { codesTable, corsHeaders } = require('./utils/airtable');
+// Eliminar un código. Desaparece del admin y de la ruleta; en la base queda marcado (eliminado_at) para
+// auditoría y para poder revertir la migración sin perder datos. Solo admin.
+const { sql, json, ruletaId, leerBody, verificarAdmin, noAutorizado, evento, normCodigo, handler } = require('./utils/db');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
-
-    if (event.httpMethod !== 'DELETE') {
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-    }
-
-    try {
-        const { codigoId } = JSON.parse(event.body);
-        
-        if (!codigoId) {
-            return { 
-                statusCode: 400, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'El campo codigoId es requerido.' }) 
-            };
-        }
-
-        // Buscar el código en Airtable
-        const records = await codesTable.select({ 
-            maxRecords: 1, 
-            filterByFormula: `{ID} = '${codigoId}'` 
-        }).firstPage();
-        
-        if (records.length === 0) {
-            return { 
-                statusCode: 404, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'Código no encontrado para eliminar' }) 
-            };
-        }
-
-        // Eliminar el código
-        await codesTable.destroy(records[0].id);
-
-        return { 
-            statusCode: 200, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: true, message: 'Código eliminado con éxito.' }) 
-        };
-    } catch (error) {
-        console.error('Error en delete-code:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+exports.handler = handler(['DELETE', 'POST'], async (event) => {
+  const rid = await ruletaId();
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const codigo = normCodigo((leerBody(event) || {}).codigoId);
+  if (!codigo) return json(400, { success: false, message: 'El campo codigoId es requerido.' });
+  // al borrar se libera el texto: el código queda archivado con un sufijo y se puede volver a crear
+  const [r] = await sql`
+    UPDATE ruletas.codigo SET eliminado_at = NOW(), actualizado_at = NOW(),
+           codigo_norm = codigo_norm || '#BORRADO-' || id
+    WHERE ruleta_id = ${rid} AND codigo_norm = ${codigo} AND eliminado_at IS NULL
+    RETURNING id`;
+  if (!r) return json(404, { success: false, message: 'Código no encontrado para eliminar' });
+  await evento(rid, 'eliminar', { codigo }, r.id);
+  return json(200, { success: true, message: 'Código eliminado con éxito.' });
+});

@@ -1,102 +1,48 @@
-const { getTable, premiosStringToArray, premiosArrayToString, corsHeaders } = require('./utils/airtable');
+// Configuración de la ruleta (nombre, avatar/foto, premios de la rueda).
+// GET: público (lo usa la ruleta del fan). POST: solo admin con token válido.
+const { sql, json, ruletaId, leerBody, verificarAdmin, noAutorizado, evento, listaPremios, handler } = require('./utils/db');
 
-// La tabla 'Configuraciones' debe tener los campos: 'Nombre Modelo' (Single line text), 'avatarURL' (Long text), 'Premios' (Long text).
-// y debe contener una única fila de registro para que esto funcione.
+const MAX_AVATAR = 1500000; // ~1,1 MB de imagen en base64
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
+exports.handler = handler(['GET', 'POST'], async (event) => {
+  const rid = await ruletaId();
+  if (event.httpMethod === 'GET') {
+    const [r] = await sql`SELECT nombre_modelo, avatar_url, premios FROM ruletas.ruleta WHERE id = ${rid}`;
+    return json(200, { success: true, data: { nombreModelo: r.nombre_modelo, avatarURL: r.avatar_url || '', premios: r.premios || [] } });
+  }
 
-    const configTable = getTable('Configuraciones');
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const body = leerBody(event);
+  if (!body) return json(400, { success: false, message: 'Datos inválidos.' });
+  const { nuevoNombreModelo, nuevaAvatarURL, nuevaListaPremios } = body;
+  const cambios = {};
+  if (nuevoNombreModelo !== undefined) {
+    const n = String(nuevoNombreModelo).trim();
+    if (!n || n.length > 60) return json(400, { success: false, message: 'Nombre inválido (1 a 60 caracteres).' });
+    cambios.nombre = n;
+  }
+  if (nuevaAvatarURL !== undefined) {
+    const a = String(nuevaAvatarURL || '');
+    if (a && !/^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(a)) return json(400, { success: false, message: 'Imagen inválida.' });
+    if (a.length > MAX_AVATAR) return json(413, { success: false, message: 'La imagen es demasiado pesada.' });
+    cambios.avatar = a;
+  }
+  if (nuevaListaPremios !== undefined) {
+    const p = listaPremios(nuevaListaPremios);
+    if (!p || p.length > 40) return json(400, { success: false, message: 'Lista de premios inválida.' });
+    cambios.premios = p;
+  }
+  if (!Object.keys(cambios).length) return json(200, { success: true, message: 'Sin cambios.' });
 
-    try {
-        // Obtenemos siempre la primera (y única) fila de configuración.
-        const records = await configTable.select({ maxRecords: 1 }).firstPage();
-        
-        let record;
-        // Si no existe ninguna fila de configuración, creamos una al vuelo.
-        if (records.length === 0) {
-            const [newRecord] = await configTable.create([{
-                fields: {
-                    'Nombre Modelo': 'Nombre por Defecto',
-                    'avatarURL': '',
-                    'Premios': 'Premio A, Premio B, Premio C'
-                }
-            }]);
-            record = newRecord;
-        } else {
-            record = records[0];
-        }
-        
-        const recordId = record.id; // ID interno de Airtable (ej: recXXXXXXXX)
-
-        // ===== LÓGICA GET (Leer Configuración) =====
-        if (event.httpMethod === 'GET') {
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    success: true,
-                    data: {
-                        nombreModelo: record.fields['Nombre Modelo'],
-                        avatarURL: record.fields.avatarURL || '',
-                        premios: premiosStringToArray(record.fields.Premios)
-                    }
-                })
-            };
-        }
-
-        // ===== LÓGICA POST (Actualizar Configuración) =====
-        if (event.httpMethod === 'POST') {
-            const body = JSON.parse(event.body);
-            const { nuevoNombreModelo, nuevaAvatarURL, nuevaListaPremios } = body;
-            const fieldsToUpdate = {};
-
-            // Construir el objeto de actualización solo con los campos que se enviaron
-            if (nuevoNombreModelo !== undefined) {
-                fieldsToUpdate['Nombre Modelo'] = nuevoNombreModelo;
-            }
-            if (nuevaAvatarURL !== undefined) {
-                // El nombre aquí DEBE coincidir con el nombre de la columna en Airtable
-                fieldsToUpdate['avatarURL'] = nuevaAvatarURL; 
-            }
-            if (nuevaListaPremios !== undefined) {
-                fieldsToUpdate['Premios'] = premiosArrayToString(nuevaListaPremios);
-            }
-
-            // Si hay algo que actualizar, procedemos
-            if (Object.keys(fieldsToUpdate).length > 0) {
-                // Usamos la sintaxis de array que es más robusta.
-                await configTable.update([{
-                    id: recordId,
-                    fields: fieldsToUpdate
-                }]);
-            }
-
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify({ success: true, message: 'Configuración actualizada con éxito.' })
-            };
-        }
-
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-
-    } catch (error) {
-        console.error("Error en config-manager:", error);
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                success: false,
-                message: 'Error interno del servidor: ' + error.message
-            })
-        };
-    }
-};
+  await sql`
+    UPDATE ruletas.ruleta SET
+      nombre_modelo = COALESCE(${cambios.nombre ?? null}, nombre_modelo),
+      avatar_url = CASE WHEN ${'avatar' in cambios} THEN ${cambios.avatar ?? ''} ELSE avatar_url END,
+      premios = COALESCE(${cambios.premios ? JSON.stringify(cambios.premios) : null}::jsonb, premios),
+      actualizado_at = NOW()
+    WHERE id = ${rid}`;
+  await evento(rid, 'config', {
+    nombre: cambios.nombre, premios: cambios.premios, avatar: 'avatar' in cambios ? (cambios.avatar ? 'actualizado' : 'quitado') : undefined,
+  });
+  return json(200, { success: true, message: 'Configuración actualizada con éxito.' });
+});

@@ -1,36 +1,13 @@
-const { codesTable, premiosStringToArray, corsHeaders } = require('./utils/airtable');
+// Listado de códigos para el admin (antes era público: cualquiera veía nombres de fans). Solo admin.
+const { sql, json, ruletaId, verificarAdmin, noAutorizado, codigoPublico, handler } = require('./utils/db');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
-
-    try {
-        const records = await codesTable.select().all();
-        const formattedCodes = records.map((record) => ({
-            codigoId: record.fields.ID,
-            nombre: record.fields['Nombre Fan'],
-            premios: premiosStringToArray(record.fields.Premios),
-            usado: record.fields.Usado || false,
-            tiradasTotales: record.fields['Tiradas Totales'] || 0,
-            tiradasRestantes: record.fields['Tiradas Restantes'] || 0
-        }));
-
-        return { 
-            statusCode: 200, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: true, data: formattedCodes }) 
-        };
-    } catch (error) {
-        console.error('Error en get-all-codes:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+exports.handler = handler(['GET'], async (event) => {
+  const rid = await ruletaId();
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const rows = await sql`
+    SELECT codigo, nombre_fan, premios, usado, tiradas_totales, tiradas_restantes, expirado_at, creado_at
+    FROM ruletas.codigo
+    WHERE ruleta_id = ${rid} AND eliminado_at IS NULL
+    ORDER BY creado_at DESC, id DESC`;
+  return json(200, { success: true, data: rows.map(codigoPublico) });
+});

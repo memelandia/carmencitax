@@ -1,79 +1,32 @@
-const { codesTable, premiosArrayToString, corsHeaders } = require('./utils/airtable');
+// Crear (o re-crear) un código. Igual que antes: tiradas = cantidad de premios asignados; si el código ya
+// existía, se sobrescribe y queda como nuevo (ronda nueva → historial limpio). Solo admin.
+const { sql, json, ruletaId, leerBody, verificarAdmin, noAutorizado, evento, normCodigo, listaPremios, handler } = require('./utils/db');
 
-exports.handler = async (event) => {
-    // Manejar preflight requests
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 200, headers: corsHeaders };
-    }
-
-    if (event.httpMethod !== 'POST') {
-        return { 
-            statusCode: 405, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ success: false, message: 'Método no permitido' }) 
-        };
-    }
-
-    try {
-        const { codigoId, nombreFan, premios } = JSON.parse(event.body);
-        
-        // Validación de datos requeridos
-        if (!codigoId || !nombreFan || !premios || !Array.isArray(premios)) {
-            return { 
-                statusCode: 400, 
-                headers: corsHeaders, 
-                body: JSON.stringify({ success: false, message: 'Faltan datos requeridos o formato incorrecto.' }) 
-            };
-        }
-
-        const totalTiradas = premios.length;
-        const data = {
-            "ID": codigoId,
-            "Nombre Fan": nombreFan,
-            "Premios": premiosArrayToString(premios),
-            "Tiradas Totales": totalTiradas,
-            "Tiradas Restantes": totalTiradas,
-            "Usado": false
-        };
-
-        // Verificar si el código ya existe
-        const existingRecords = await codesTable.select({ 
-            maxRecords: 1, 
-            filterByFormula: `{ID} = '${codigoId}'` 
-        }).firstPage();
-        
-        let operation;
-        if (existingRecords.length > 0) {
-            // Actualizar código existente usando sintaxis robusta
-            await codesTable.update([{
-                id: existingRecords[0].id,
-                fields: data
-            }]);
-            operation = 'updated';
-        } else {
-            // Crear nuevo código usando sintaxis de array
-            await codesTable.create([{ fields: data }]);
-            operation = 'created';
-        }
-
-        return { 
-            statusCode: 200, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: true, 
-                message: `Código ${operation} con éxito`, 
-                operation 
-            }) 
-        };
-    } catch (error) {
-        console.error('Error en create-code:', error);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ 
-                success: false, 
-                message: 'Error interno del servidor: ' + error.message 
-            }) 
-        };
-    }
-};
+exports.handler = handler(['POST'], async (event) => {
+  const rid = await ruletaId();
+  if ((await verificarAdmin(event)) !== rid) return noAutorizado();
+  const body = leerBody(event) || {};
+  const codigo = String(body.codigoId || '').trim();
+  const nombreFan = String(body.nombreFan || '').trim();
+  const premios = listaPremios(body.premios);
+  if (!codigo || !nombreFan || !premios || !premios.length) {
+    return json(400, { success: false, message: 'Faltan datos requeridos o formato incorrecto.' });
+  }
+  if (codigo.length > 60 || nombreFan.length > 80 || premios.length > 40) {
+    return json(400, { success: false, message: 'Código, nombre o premios demasiado largos.' });
+  }
+  const total = premios.length;
+  const [r] = await sql`
+    INSERT INTO ruletas.codigo (ruleta_id, codigo, codigo_norm, nombre_fan, premios, tiradas_totales, tiradas_restantes, usado, origen)
+    VALUES (${rid}, ${codigo}, ${normCodigo(codigo)}, ${nombreFan}, ${JSON.stringify(premios)}::jsonb, ${total}, ${total}, false,
+            ${/^ZZTEST/i.test(codigo) ? 'prueba' : 'postgres'})
+    ON CONFLICT (ruleta_id, codigo_norm) DO UPDATE SET
+      codigo = EXCLUDED.codigo, nombre_fan = EXCLUDED.nombre_fan, premios = EXCLUDED.premios,
+      tiradas_totales = EXCLUDED.tiradas_totales, tiradas_restantes = EXCLUDED.tiradas_restantes,
+      usado = false, ronda = ruletas.codigo.ronda + 1, ganados_previos = 0,
+      expirado_at = NULL, eliminado_at = NULL, actualizado_at = NOW()
+    RETURNING id, (xmax = 0) AS creado`;
+  const operation = r.creado ? 'created' : 'updated';
+  await evento(rid, r.creado ? 'crear' : 'actualizar', { codigo, nombreFan, premios }, r.id);
+  return json(200, { success: true, message: `Código ${operation} con éxito`, operation });
+});

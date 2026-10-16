@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="admin-sesion.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carmencitax - Panel de Administración</title>
@@ -1050,7 +1051,7 @@
                 if (response.ok && result.success) {
                     premiosModificados = false;
                     mostrarBotonGuardarCambios(false);
-                    mostrarNotificacion('✨ Cambios guardados exitosamente en Airtable!', 'success');
+                    mostrarNotificacion('✨ Cambios guardados exitosamente!', 'success');
                     
                     // Actualizar variable global para el selector de códigos
                     premiosDisponibles = [...premiosLocales];
@@ -1757,7 +1758,7 @@
         }
 
         function generarCodigoAleatorio() {
-            const prefix = 'USERVIP';
+            const prefix = 'CARMEN';
             const chars = '123456789'; // Caracteres sin O y 0 para evitar confusiones
             let result = '';
             for (let i = 0; i < 4; i++) {
@@ -1793,5 +1794,94 @@
 
         document.getElementById('customCode').addEventListener('input', e => e.target.value = e.target.value.toUpperCase());
     </script>
+
+<script id="avatar-uploader">
+(function () {
+  function init() {
+    var anchor = document.getElementById('nombreModeloInput');
+    if (!anchor) { return setTimeout(init, 200); }
+    if (document.getElementById('avatarUploaderBox')) return;
+    var host = anchor.parentNode;
+    var box = document.createElement('div');
+    box.id = 'avatarUploaderBox';
+    box.style.cssText = 'margin:14px 0 18px; text-align:center;';
+    box.innerHTML =
+      '<div style="font-weight:700; margin-bottom:8px; opacity:.85;">📸 Foto de la modelo (fondo de la tarjeta)</div>' +
+      '<div style="display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;">' +
+        '<img id="avatarPreview" style="width:72px; height:72px; border-radius:12px; object-fit:cover; border:2px solid rgba(255,255,255,.25); background:rgba(127,127,127,.15); display:none;">' +
+        '<label style="cursor:pointer; padding:10px 16px; border-radius:10px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); font-weight:600;">' +
+          'Elegir foto…<input id="avatarFile" type="file" accept="image/*" style="display:none;">' +
+        '</label>' +
+        '<button id="avatarSaveBtn" style="padding:10px 16px; border:none; border-radius:10px; font-weight:700; cursor:pointer; opacity:.5;" disabled>Guardar foto</button>' +
+        '<button id="avatarClearBtn" style="padding:10px 12px; border:none; border-radius:10px; font-weight:600; cursor:pointer; background:rgba(239,68,68,.18); color:#ff9a9a;">Quitar</button>' +
+      '</div>' +
+      '<div id="avatarMsg" style="font-size:.8rem; margin-top:6px; opacity:.8;"></div>';
+    host.insertBefore(box, anchor.nextSibling);
+
+    var fileInput = document.getElementById('avatarFile');
+    var preview = document.getElementById('avatarPreview');
+    var saveBtn = document.getElementById('avatarSaveBtn');
+    var clearBtn = document.getElementById('avatarClearBtn');
+    var msg = document.getElementById('avatarMsg');
+    var current = null;
+
+    function setMsg(t, ok) { msg.textContent = t || ''; msg.style.color = ok ? '#8ff0a4' : '#ffd0d0'; }
+
+    // Cargar foto actual
+    fetch('/.netlify/functions/config-manager').then(function (r) { return r.json(); }).then(function (j) {
+      var a = j && j.data && j.data.avatarURL;
+      if (a && a.indexOf('data:image/') === 0) { preview.src = a; preview.style.display = 'inline-block'; }
+    }).catch(function () {});
+
+    fileInput.addEventListener('change', function () {
+      var f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      setMsg('Procesando…');
+      var img = new Image();
+      img.onload = function () {
+        var maxW = 520;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        current = c.toDataURL('image/jpeg', 0.82);
+        preview.src = current; preview.style.display = 'inline-block';
+        saveBtn.disabled = false; saveBtn.style.opacity = '1';
+        setMsg('Lista para guardar (' + Math.round(current.length / 1024) + ' KB)', true);
+      };
+      img.onerror = function () { setMsg('No se pudo leer la imagen.'); };
+      var rd = new FileReader();
+      rd.onload = function (e) { img.src = e.target.result; };
+      rd.readAsDataURL(f);
+    });
+
+    saveBtn.addEventListener('click', function () {
+      if (!current) return;
+      saveBtn.disabled = true; setMsg('Guardando…');
+      fetch('/.netlify/functions/config-manager', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuevaAvatarURL: current })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.success) { setMsg('✅ Foto guardada. Se ve en la ruleta al recargar.', true); }
+        else { setMsg('Error: ' + ((j && j.message) || 'no se pudo guardar')); saveBtn.disabled = false; }
+      }).catch(function () { setMsg('Error de conexión.'); saveBtn.disabled = false; });
+    });
+
+    clearBtn.addEventListener('click', function () {
+      if (!confirm('¿Quitar la foto de la ruleta?')) return;
+      setMsg('Quitando…');
+      fetch('/.netlify/functions/config-manager', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuevaAvatarURL: '' })
+      }).then(function (r) { return r.json(); }).then(function () {
+        current = null; preview.style.display = 'none'; preview.src = '';
+        saveBtn.disabled = true; saveBtn.style.opacity = '.5';
+        setMsg('Foto quitada.', true);
+      }).catch(function () { setMsg('Error de conexión.'); });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 </body>
 </html>

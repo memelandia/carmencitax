@@ -1,6 +1,6 @@
 {
   "name": "carmen-ruleta",
-  "version": "1.0.0", 
+  "version": "1.0.0",
   "description": "Ruleta interactiva para Carmen",
   "main": "index.html",
   "scripts": {
@@ -9,13 +9,14 @@
     "start": "netlify dev"
   },
   "dependencies": {
-    "airtable": "^0.12.2",
-    "dotenv": "^16.0.3"
+    "@neondatabase/serverless": "^1.2.0"
   },
-  "devDependencies": {
-    "netlify-cli": "^17.0.0"
-  },
-  "keywords": ["ruleta", "carmen", "netlify", "airtable"],
+  "keywords": [
+    "ruleta",
+    "carmen",
+    "netlify",
+    "postgresql"
+  ],
   "author": "Tu Nombre",
   "license": "MIT"
 }
